@@ -1,0 +1,15 @@
+/**
+ * DB Admin UI — design system condiviso tra i plugin di Davide Bertolino.
+ * Definisce le variabili di colore usate dagli admin CSS dei singoli plugin.
+ */
+:root {
+	--db-primary: #0066cc;
+	--db-primary-dark: #004d99;
+	--db-accent: #f5a623;
+	--db-bg: #f6f7f9;
+	--db-border: #d9dce0;
+	--db-text: #1b1f24;
+	--db-muted: #5b6470;
+	--db-radius: 8px;
+	--db-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}

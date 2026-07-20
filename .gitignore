@@ -1,0 +1,16 @@
+# Build
+/build/
+*.zip
+
+# Dipendenze
+/vendor/
+/node_modules/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
+*.sublime-*
