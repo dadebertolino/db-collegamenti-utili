@@ -58,6 +58,21 @@ Nel carosello compaiono **solo** le voci con il flag "Mostra nel carosello" atti
 
 Gli aggiornamenti arrivano automaticamente dalle Release GitHub (`dadebertolino/db-collegamenti-utili`).
 
+## Changelog
+
+### 1.0.1
+
+- **Correzione importante all'aggiornatore.** `after_install()` non verificava che l'aggiornamento in corso riguardasse questo plugin: essendo `upgrader_post_install` un filtro globale, il codice interveniva sui file di *qualsiasi* plugin o tema aggiornato sul sito. Il file è ora allineato al componente condiviso `DB_GitHub_Updater`, che include il controllo su `$hook_extra['plugin']`, l'header `User-Agent` richiesto dall'API GitHub, la cache dei fallimenti e la riattivazione del plugin dopo l'aggiornamento.
+- Pagina di dettaglio: i metadati degli allegati non generano più warning PHP né mostrano "0 B" quando il file non è più sul disco (spostato, rimosso o servito da CDN). L'estensione si ricava dall'URL, la dimensione viene omessa se non calcolabile.
+- Carosello: rimosso l'`INNER JOIN` sulla postmeta introdotto da `meta_key` + `meta_value_num`, che escludeva le voci prive del campo *ordine* anche con il flag attivo. L'ordinamento avviene ora in PHP e le voci senza ordine valgono 0.
+- Testo alternativo del logo: la validazione non usa più l'attributo HTML5 `required`, che dentro Gutenberg poteva bloccare il salvataggio senza mostrare l'errore. Al suo posto un avviso in bacheca dopo il salvataggio.
+- Allegati: l'indice delle nuove righe usa un contatore progressivo invece di `Date.now()`, che poteva collidere per righe aggiunte nello stesso millisecondo.
+- Allineato `db-admin-ui.css` al design system condiviso e corretti i riferimenti in `admin.css` (`--db-muted` non esiste nel design system, il token corretto è `--db-text-muted`).
+
+### 1.0.0
+
+- Prima versione pubblica.
+
 ## Note sul tema
 
 Il carosello si appoggia allo **Splide** caricato dal tema Design Scuola Italia (classe `it-carousel-wrapper`). Su un tema diverso il markup resta valido ma potrebbe non animarsi: in quel caso serve una variante autonoma del carosello.

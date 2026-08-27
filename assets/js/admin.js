@@ -4,6 +4,13 @@
 
 	var i18n = window.dbcuI18n || {};
 
+	// Contatore per gli indici delle nuove righe allegato. Parte da Date.now()
+	// per non collidere con le righe già rese dal PHP, ma poi incrementa: usare
+	// Date.now() a ogni click farebbe collidere due righe aggiunte nello stesso
+	// millisecondo. Gli indici servono solo a tenere distinti i campi nel POST,
+	// perché il PHP li reindicizza al salvataggio.
+	var rowIndex = Date.now();
+
 	/**
 	 * Media picker per immagini (logo carosello).
 	 */
@@ -74,9 +81,8 @@
 	 */
 	$( document ).on( 'click', '#dbcu-add-attachment', function ( e ) {
 		e.preventDefault();
-		var tpl   = $( '#dbcu-attachment-template' ).html();
-		var index = Date.now();
-		tpl = tpl.replace( /__INDEX__/g, index );
+		var tpl = $( '#dbcu-attachment-template' ).html();
+		tpl = tpl.replace( /__INDEX__/g, rowIndex++ );
 		$( '#dbcu-attachments-list' ).append( tpl );
 	} );
 

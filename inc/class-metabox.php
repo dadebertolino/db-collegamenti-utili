@@ -21,6 +21,33 @@ class DBCU_Metabox {
 		add_action( 'add_meta_boxes', array( __CLASS__, 'add_boxes' ) );
 		add_action( 'save_post_' . DBCU_CPT, array( __CLASS__, 'save' ), 10, 2 );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue' ) );
+		add_action( 'admin_notices', array( __CLASS__, 'alt_missing_notice' ) );
+	}
+
+	/**
+	 * Avvisa se è stato salvato un logo carosello senza testo alternativo.
+	 *
+	 * La validazione è lato server e non con l'attributo HTML5 `required`: le
+	 * meta box classiche vengono inviate da Gutenberg dentro un iframe nascosto,
+	 * dove una validazione fallita bloccherebbe il salvataggio senza mostrare
+	 * alcun messaggio all'utente.
+	 */
+	public static function alt_missing_notice() {
+		$screen = get_current_screen();
+		if ( ! $screen || DBCU_CPT !== $screen->post_type || 'post' !== $screen->base ) {
+			return;
+		}
+
+		$post_id = isset( $_GET['post'] ) ? absint( $_GET['post'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! $post_id || ! get_transient( 'dbcu_alt_missing_' . $post_id ) ) {
+			return;
+		}
+		delete_transient( 'dbcu_alt_missing_' . $post_id );
+
+		printf(
+			'<div class="notice notice-warning is-dismissible"><p>%s</p></div>',
+			esc_html__( 'Hai impostato un logo per il carosello senza testo alternativo. Il logo resta visibile, ma per gli screen reader sarà descritto dal titolo della voce: compila il campo "Testo alternativo del logo" per rispettare le WCAG 2.1 AA.', 'db-collegamenti-utili' )
+		);
 	}
 
 	/**
@@ -106,14 +133,14 @@ class DBCU_Metabox {
 		</div>
 
 		<div class="dbcu-field">
-			<label class="dbcu-label" for="dbcu_carousel_logo_alt"><?php esc_html_e( 'Testo alternativo del logo (alt) — obbligatorio', 'db-collegamenti-utili' ); ?></label>
-			<input type="text" class="widefat" id="dbcu_carousel_logo_alt" name="dbcu_carousel_logo_alt" value="<?php echo esc_attr( $logo_alt ); ?>" required aria-required="true" placeholder="<?php esc_attr_e( 'Es. Logo PON 2014-2020 Fondi Strutturali Europei', 'db-collegamenti-utili' ); ?>" />
+			<label class="dbcu-label" for="dbcu_carousel_logo_alt"><?php esc_html_e( 'Testo alternativo del logo (alt) — obbligatorio se c\'è un logo', 'db-collegamenti-utili' ); ?></label>
+			<input type="text" class="widefat" id="dbcu_carousel_logo_alt" name="dbcu_carousel_logo_alt" value="<?php echo esc_attr( $logo_alt ); ?>" aria-required="true" placeholder="<?php esc_attr_e( 'Es. Logo PON 2014-2020 Fondi Strutturali Europei', 'db-collegamenti-utili' ); ?>" />
 			<p class="description"><?php esc_html_e( 'Descrizione dell\'immagine per screen reader (accessibilità WCAG 2.1 AA).', 'db-collegamenti-utili' ); ?></p>
 		</div>
 
 		<div class="dbcu-field">
 			<label class="dbcu-label" for="dbcu_external_link"><?php esc_html_e( 'Link esterno (opzionale)', 'db-collegamenti-utili' ); ?></label>
-			<input type="url" class="widefat" id="dbcu_external_link" name="dbcu_external_link" value="<?php echo esc_url( $link ); ?>" placeholder="https://..." />
+			<input type="url" class="widefat" id="dbcu_external_link" name="dbcu_external_link" value="<?php echo esc_attr( $link ); ?>" placeholder="https://..." />
 			<p class="description"><?php esc_html_e( 'Se compilato, dal carosello si aprirà questo link (in nuova scheda) invece della pagina di dettaglio.', 'db-collegamenti-utili' ); ?></p>
 		</div>
 
@@ -224,6 +251,11 @@ class DBCU_Metabox {
 
 		$logo_alt = isset( $_POST['dbcu_carousel_logo_alt'] ) ? sanitize_text_field( wp_unslash( $_POST['dbcu_carousel_logo_alt'] ) ) : '';
 		update_post_meta( $post_id, '_dbcu_carousel_logo_alt', $logo_alt );
+
+		// Segnala l'alt mancante al redirect successivo (vedi alt_missing_notice()).
+		if ( $logo_id && '' === $logo_alt ) {
+			set_transient( 'dbcu_alt_missing_' . $post_id, 1, MINUTE_IN_SECONDS );
+		}
 
 		$link = isset( $_POST['dbcu_external_link'] ) ? esc_url_raw( wp_unslash( $_POST['dbcu_external_link'] ) ) : '';
 		update_post_meta( $post_id, '_dbcu_external_link', $link );

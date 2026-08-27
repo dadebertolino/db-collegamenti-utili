@@ -50,15 +50,15 @@ class DBCU_Shortcode {
 
 		$query = new WP_Query(
 			array(
-				'post_type'      => DBCU_CPT,
-				'post_status'    => 'publish',
-				'posts_per_page' => 50,
-				'meta_key'       => '_dbcu_carousel_order', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-				'orderby'        => array(
-					'meta_value_num' => 'ASC',
-					'date'           => 'DESC',
-				),
-				'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+				'post_type'              => DBCU_CPT,
+				'post_status'            => 'publish',
+				'posts_per_page'         => 50,
+				'orderby'                => 'date',
+				'order'                  => 'DESC',
+				'no_found_rows'          => true,
+				'ignore_sticky_posts'    => true,
+				'update_post_term_cache' => false,
+				'meta_query'             => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 					array(
 						'key'   => '_dbcu_show_in_carousel',
 						'value' => '1',
@@ -70,6 +70,28 @@ class DBCU_Shortcode {
 		if ( ! $query->have_posts() ) {
 			return '';
 		}
+
+		/*
+		 * L'ordinamento avviene qui e non in SQL di proposito: passare 'meta_key' +
+		 * 'meta_value_num' a WP_Query aggiunge un INNER JOIN sulla postmeta, che fa
+		 * sparire dal carosello le voci prive di '_dbcu_carousel_order' anche col
+		 * flag attivo (voci create da import, WP-CLI o salvataggi via REST). Qui le
+		 * voci senza ordine valgono 0 e restano visibili. Il confronto sulla data
+		 * come spareggio rende l'esito deterministico anche su PHP 7.4, dove usort
+		 * non è ancora stabile.
+		 */
+		$slides = $query->posts;
+		usort(
+			$slides,
+			static function ( $a, $b ) {
+				$order_a = (int) get_post_meta( $a->ID, '_dbcu_carousel_order', true );
+				$order_b = (int) get_post_meta( $b->ID, '_dbcu_carousel_order', true );
+				if ( $order_a !== $order_b ) {
+					return $order_a - $order_b;
+				}
+				return strcmp( $b->post_date, $a->post_date );
+			}
+		);
 
 		wp_enqueue_style( 'dbcu-frontend' );
 
@@ -92,11 +114,9 @@ class DBCU_Shortcode {
 					<div class="splide__track">
 						<ul class="splide__list">
 							<?php
-							while ( $query->have_posts() ) {
-								$query->the_post();
-								echo self::render_slide( get_the_ID() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+							foreach ( $slides as $slide ) {
+								echo self::render_slide( $slide->ID ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 							}
-							wp_reset_postdata();
 							?>
 						</ul>
 					</div>

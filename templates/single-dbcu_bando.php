@@ -74,9 +74,17 @@ while ( have_posts() ) :
 							$att_title = ! empty( $item['title'] ) ? $item['title'] : get_the_title( $file_id );
 							$att_desc  = ! empty( $item['desc'] ) ? $item['desc'] : '';
 							$att_date  = ! empty( $item['date'] ) ? $item['date'] : '';
-							$mime      = get_post_mime_type( $file_id );
-							$ext       = strtoupper( pathinfo( get_attached_file( $file_id ), PATHINFO_EXTENSION ) );
-							$size      = size_format( (int) filesize( get_attached_file( $file_id ) ) );
+							// L'estensione si ricava dall'URL: funziona anche se il file
+							// è stato spostato su CDN/storage esterno e non sta più su disco.
+							$ext = strtoupper( pathinfo( wp_parse_url( $file_url, PHP_URL_PATH ), PATHINFO_EXTENSION ) );
+
+							// La dimensione richiede il file locale: se manca, si omette
+							// invece di emettere warning e mostrare "0 B".
+							$size = '';
+							$path = get_attached_file( $file_id );
+							if ( $path && file_exists( $path ) ) {
+								$size = size_format( (int) filesize( $path ) );
+							}
 
 							$meta_bits = array();
 							if ( $ext ) {
