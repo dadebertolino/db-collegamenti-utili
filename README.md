@@ -45,9 +45,11 @@ Nel carosello compaiono **solo** le voci con il flag "Mostra nel carosello" atti
 
 ### Quando il carosello non scorre
 
-Il carosello scorre solo se le voci pubblicate e spuntate sono **più** di quelle visibili insieme. Con `per_view="3"` servono almeno 4 voci: con 3 o meno stanno già tutte a schermo, non c'è nulla da far scorrere, e il plugin mostra di proposito una riga statica centrata senza frecce né autoplay — meglio di un carosello con i comandi che non rispondono.
+Il carosello scorre se le voci pubblicate e spuntate sono **più** di quelle visibili insieme — e quante ne stanno insieme dipende dalla larghezza dello schermo: `per_view` su desktop, 2 sotto i 992px, 1 sotto i 768px.
 
-Se hai poche voci e vuoi comunque lo scorrimento, abbassa `per_view`.
+Ne segue che lo stesso carosello può comportarsi diversamente a seconda del dispositivo. Con `per_view="3"` e 2 voci, per esempio, su desktop non c'è nulla da scorrere, mentre su telefono le pagine sono due. Quando alla larghezza corrente esiste una sola pagina il plugin nasconde frecce e pulsante di pausa e centra i loghi, invece di mostrare comandi che non rispondono; appena la finestra si stringe abbastanza, i comandi ricompaiono da soli.
+
+Se vuoi lo scorrimento anche su desktop con poche voci, abbassa `per_view`.
 
 ### Scorrimento automatico e accessibilità
 
@@ -72,6 +74,13 @@ Lo scorrimento si ferma inoltre da sé al passaggio del mouse e all'arrivo del f
 Gli aggiornamenti arrivano automaticamente dalle Release GitHub (`dadebertolino/db-collegamenti-utili`).
 
 ## Changelog
+
+### 1.1.1
+
+- **Correzione al comportamento introdotto nella 1.1.0 su schermi stretti.** Se il carosello avesse o no qualcosa da scorrere veniva deciso in PHP confrontando le voci con `per_view`, cioè con il valore *desktop*. Ma i breakpoint abbassano le colonne a 2 sotto i 992px e a 1 sotto i 768px: con 2 voci e `per_view="3"` il carosello è effettivamente fermo su desktop, mentre su telefono ha due pagine. Disattivando frecce e trascinamento a monte, su mobile le due voci restavano irraggiungibili e — per via del centraggio applicato al caso "statico" — venivano mostrate entrambe a metà, tagliate su tutti e due i lati.
+- Frecce e trascinamento sono ora sempre attivi e li governa Splide, che conosce il breakpoint corrente. `frontend.js` nasconde i comandi e centra i loghi solo quando `Controller.getEnd()` dice che alla larghezza attuale esiste una sola pagina, ricalcolandolo a ogni ridimensionamento.
+- I comandi restano nascosti anche finché Splide non è stato montato, così su un tema senza Splide non compaiono frecce inerti.
+- Aggiunta l'opzione `rewind`, perché lo scorrimento automatico riparta dall'inizio anche quando il carosello non è in modalità ciclo.
 
 ### 1.1.0
 

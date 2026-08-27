@@ -108,13 +108,14 @@ class DBCU_Shortcode {
 		$total    = count( $slides );
 
 		/*
-		 * Se le voci non superano quelle visibili contemporaneamente non c'è nulla
-		 * da far scorrere: niente frecce, niente autoplay, niente ciclo. Meglio una
-		 * riga statica di loghi che un carosello con i comandi inerti.
+		 * Se c'è o no qualcosa da far scorrere NON si decide qui: dipende dalla
+		 * larghezza dello schermo, perché i breakpoint abbassano `perPage` (a 2 sotto
+		 * i 992px, a 1 sotto i 768px). Con 2 voci e per_view 3 il carosello è fermo su
+		 * desktop ma ha due pagine su telefono. Frecce e trascinamento restano quindi
+		 * sempre attivi e se ne occupa Splide, che conosce il breakpoint corrente;
+		 * frontend.js nasconde i comandi solo quando servono davvero a nulla.
 		 */
-		$scrollable = $total > $per_view;
-
-		$autoplay = $scrollable
+		$autoplay = $total > 1
 			&& ( 'true' === $atts['autoplay'] || '1' === (string) $atts['autoplay'] );
 
 		$interval = max( 3, (int) $atts['intervallo'] );
@@ -127,12 +128,17 @@ class DBCU_Shortcode {
 		 * trova, e comunque forza `arrows: false` e non prevede l'autoplay.
 		 */
 		$options = array(
-			'type'         => $scrollable ? 'loop' : 'slide',
+			// 'loop' solo se le voci superano quelle visibili anche su desktop:
+			// in ciclo Splide clona le slide per riempire la pagina, e con poche
+			// voci si vedrebbero gli stessi loghi ripetuti. 'rewind' dà comunque
+			// la continuità che serve allo scorrimento automatico.
+			'type'         => $total > $per_view ? 'loop' : 'slide',
+			'rewind'       => true,
 			'perPage'      => $per_view,
 			'perMove'      => 1,
 			'gap'          => '1.5rem',
-			'arrows'       => $scrollable,
-			'drag'         => $scrollable,
+			'arrows'       => true,
+			'drag'         => true,
 			'pagination'   => false,
 			'slideFocus'   => false,
 			'autoplay'     => $autoplay,
@@ -156,7 +162,7 @@ class DBCU_Shortcode {
 				<h2 class="dbcu-carousel-title text-center" id="<?php echo esc_attr( $uid ); ?>-title"><?php echo esc_html( $atts['titolo'] ); ?></h2>
 			<?php endif; ?>
 
-			<div class="it-carousel-wrapper it-carousel-landscape-abstract-three-cols dbcu-carousel<?php echo $scrollable ? '' : ' dbcu-carousel--statico'; ?>"
+			<div class="it-carousel-wrapper it-carousel-landscape-abstract-three-cols dbcu-carousel"
 				id="<?php echo esc_attr( $uid ); ?>"
 				data-dbcu-options="<?php echo esc_attr( wp_json_encode( $options ) ); ?>">
 				<?php
@@ -179,7 +185,7 @@ class DBCU_Shortcode {
 						</ul>
 					</div>
 
-					<?php if ( $scrollable ) : ?>
+					<?php // I comandi sono nascosti via CSS finché frontend.js non ha montato Splide, e di nuovo quando alla larghezza corrente non c'è nulla da scorrere. ?>
 						<div class="splide__arrows dbcu-arrows">
 							<button class="splide__arrow splide__arrow--prev dbcu-arrow dbcu-arrow--prev" type="button" aria-label="<?php esc_attr_e( 'Vai al collegamento precedente', 'db-collegamenti-utili' ); ?>">
 								<svg class="icon" aria-hidden="true" focusable="false"><use xlink:href="#it-chevron-left" href="#it-chevron-left"></use></svg>
@@ -200,7 +206,6 @@ class DBCU_Shortcode {
 								<svg class="icon" aria-hidden="true" focusable="false"><use xlink:href="#it-chevron-right" href="#it-chevron-right"></use></svg>
 							</button>
 						</div>
-					<?php endif; ?>
 				</div>
 			</div>
 		</section>

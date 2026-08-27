@@ -134,8 +134,20 @@
 	display: none;
 }
 
-/* ---- Carosello con meno voci di quante ne stanno a schermo ---- */
-/* Non scorre e non ha comandi: i loghi si centrano invece di accostarsi a sinistra. */
+/* ---- Comandi ---- */
+/* Nascosti finché frontend.js non ha montato Splide: senza istanza non farebbero
+   nulla, e su un tema privo di Splide resterebbero lì inerti per sempre. */
+.dbcu-carousel:not( .dbcu-carousel--montato ) .dbcu-arrows {
+	display: none;
+}
+
+/* ---- Carosello che alla larghezza corrente non ha nulla da scorrere ---- */
+/* La classe la mette frontend.js leggendo Controller.getEnd(), quindi cambia con
+   il breakpoint. Il centraggio è sicuro solo qui: se le slide traboccassero,
+   `justify-content: center` centrerebbe l'eccedenza tagliandola da entrambi i lati. */
+.dbcu-carousel--statico .dbcu-arrows {
+	display: none;
+}
 .dbcu-carousel--statico .splide__list {
 	justify-content: center;
 }

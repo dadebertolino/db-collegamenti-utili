@@ -38,8 +38,25 @@
 		}
 
 		var carosello = new Splide( elemento, opzioni );
+
+		/*
+		 * Se alla larghezza corrente ci sia o no qualcosa da scorrere lo sa solo
+		 * Splide: i breakpoint cambiano `perPage`, quindi lo stesso carosello può
+		 * essere fermo su desktop e scorrevole su telefono. `Controller.getEnd()`
+		 * vale 0 quando esiste una sola pagina. Va ricalcolato a ogni ridimensiona-
+		 * mento, non una volta sola al montaggio.
+		 */
+		function aggiornaScorrimento() {
+			var fine = carosello.Components.Controller.getEnd();
+			wrapper.classList.toggle( 'dbcu-carousel--statico', fine <= 0 );
+		}
+
+		carosello.on( 'mounted resized updated', aggiornaScorrimento );
 		carosello.mount();
+
 		elemento.setAttribute( 'data-dbcu-montato', '1' );
+		wrapper.classList.add( 'dbcu-carousel--montato' );
+		aggiornaScorrimento();
 
 		collegaPulsantePausa( wrapper, carosello, opzioni.autoplay, motoRidotto );
 	}
