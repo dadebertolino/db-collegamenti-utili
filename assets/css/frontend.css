@@ -119,6 +119,27 @@
 	fill: currentColor;
 }
 
+/* ---- Pulsante pausa/riprendi (WCAG 2.2.2) ---- */
+/* Eredita forma e stati da .dbcu-arrow: qui si scambiano solo le due icone. */
+.dbcu-autoplay-toggle .dbcu-icon-play {
+	display: none;
+}
+.dbcu-autoplay-toggle.is-paused .dbcu-icon-pausa {
+	display: none;
+}
+.dbcu-autoplay-toggle.is-paused .dbcu-icon-play {
+	display: inline-block;
+}
+.dbcu-autoplay-toggle[hidden] {
+	display: none;
+}
+
+/* ---- Carosello con meno voci di quante ne stanno a schermo ---- */
+/* Non scorre e non ha comandi: i loghi si centrano invece di accostarsi a sinistra. */
+.dbcu-carousel--statico .splide__list {
+	justify-content: center;
+}
+
 /* ---- Pagina di dettaglio ---- */
 .dbcu-single-title {
 	margin-bottom: 1.5rem;

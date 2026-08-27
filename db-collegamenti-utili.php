@@ -3,7 +3,7 @@
  * Plugin Name:       DB Collegamenti Utili
  * Plugin URI:        https://www.davidebertolino.it/progetti/
  * Description:        Gestisce bandi/PON e collegamenti utili (logo, descrittivo, allegati) e li mostra in home tramite un carosello accessibile che riusa il componente Bootstrap Italia del tema Design Scuola Italia. Shortcode: [db_collegamenti_utili].
- * Version:           1.0.1
+ * Version:           1.1.0
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            Davide Bertolino
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'DBCU_VERSION', '1.0.1' );
+define( 'DBCU_VERSION', '1.1.0' );
 define( 'DBCU_FILE', __FILE__ );
 define( 'DBCU_DIR', plugin_dir_path( __FILE__ ) );
 define( 'DBCU_URL', plugin_dir_url( __FILE__ ) );

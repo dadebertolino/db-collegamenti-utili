@@ -29,6 +29,11 @@ class DBCU_Shortcode {
 	 */
 	public static function register_assets() {
 		wp_register_style( 'dbcu-frontend', DBCU_URL . 'assets/css/frontend.css', array(), DBCU_VERSION );
+
+		// Nessuna dipendenza dichiarata: Splide è caricato dal tema Design Scuola
+		// Italia con un handle che non conosciamo. Lo script gira in footer e
+		// verifica window.Splide a runtime, degradando a lista statica se manca.
+		wp_register_script( 'dbcu-frontend', DBCU_URL . 'assets/js/frontend.js', array(), DBCU_VERSION, true );
 	}
 
 	/**
@@ -40,9 +45,10 @@ class DBCU_Shortcode {
 	public static function render( $atts ) {
 		$atts = shortcode_atts(
 			array(
-				'titolo'   => __( 'Collegamenti utili', 'db-collegamenti-utili' ),
-				'per_view' => 3,       // Loghi visibili per slide su desktop.
-				'autoplay' => 'false', // Off di default: WCAG scoraggia l'auto-scroll non controllato.
+				'titolo'     => __( 'Collegamenti utili', 'db-collegamenti-utili' ),
+				'per_view'   => 3,       // Loghi visibili per slide su desktop.
+				'autoplay'   => 'false', // Off di default: WCAG scoraggia l'auto-scroll non controllato.
+				'intervallo' => 5,       // Secondi fra uno scorrimento e l'altro, se autoplay è attivo.
 			),
 			$atts,
 			'db_collegamenti_utili'
@@ -95,22 +101,74 @@ class DBCU_Shortcode {
 
 		wp_enqueue_style( 'dbcu-frontend' );
 
+		wp_enqueue_script( 'dbcu-frontend' );
+
 		$per_view = max( 1, min( 4, (int) $atts['per_view'] ) );
-		$autoplay = ( 'true' === $atts['autoplay'] || '1' === (string) $atts['autoplay'] ) ? 'true' : 'false';
 		$uid      = 'dbcu-' . wp_unique_id();
+		$total    = count( $slides );
+
+		/*
+		 * Se le voci non superano quelle visibili contemporaneamente non c'è nulla
+		 * da far scorrere: niente frecce, niente autoplay, niente ciclo. Meglio una
+		 * riga statica di loghi che un carosello con i comandi inerti.
+		 */
+		$scrollable = $total > $per_view;
+
+		$autoplay = $scrollable
+			&& ( 'true' === $atts['autoplay'] || '1' === (string) $atts['autoplay'] );
+
+		$interval = max( 3, (int) $atts['intervallo'] );
+
+		/*
+		 * Le opzioni viaggiano in un data attribute e vengono applicate dal nostro
+		 * frontend.js. Non ci si può appoggiare all'inizializzatore del tema: quello
+		 * di Bootstrap Italia legge le classi `it-carousel-*` sull'elemento Splide
+		 * stesso (non sul wrapper), monta con opzioni tutte `undefined` se non le
+		 * trova, e comunque forza `arrows: false` e non prevede l'autoplay.
+		 */
+		$options = array(
+			'type'         => $scrollable ? 'loop' : 'slide',
+			'perPage'      => $per_view,
+			'perMove'      => 1,
+			'gap'          => '1.5rem',
+			'arrows'       => $scrollable,
+			'drag'         => $scrollable,
+			'pagination'   => false,
+			'slideFocus'   => false,
+			'autoplay'     => $autoplay,
+			'interval'     => $interval * 1000,
+			'pauseOnHover' => true,
+			'pauseOnFocus' => true,
+			'i18n'         => array(
+				'prev' => __( 'Vai al collegamento precedente', 'db-collegamenti-utili' ),
+				'next' => __( 'Vai al collegamento successivo', 'db-collegamenti-utili' ),
+			),
+			'breakpoints'  => array(
+				992 => array( 'perPage' => min( 2, $per_view ) ),
+				768 => array( 'perPage' => 1 ),
+			),
+		);
 
 		ob_start();
 		?>
-		<section class="dbcu-carousel-section" aria-label="<?php echo esc_attr( $atts['titolo'] ); ?>">
+		<section class="dbcu-carousel-section" <?php echo $atts['titolo'] ? 'aria-labelledby="' . esc_attr( $uid ) . '-title"' : 'aria-label="' . esc_attr__( 'Collegamenti utili', 'db-collegamenti-utili' ) . '"'; ?>>
 			<?php if ( $atts['titolo'] ) : ?>
-				<h2 class="dbcu-carousel-title text-center"><?php echo esc_html( $atts['titolo'] ); ?></h2>
+				<h2 class="dbcu-carousel-title text-center" id="<?php echo esc_attr( $uid ); ?>-title"><?php echo esc_html( $atts['titolo'] ); ?></h2>
 			<?php endif; ?>
 
-			<div class="it-carousel-wrapper it-carousel-landscape-abstract-three-cols dbcu-carousel"
+			<div class="it-carousel-wrapper it-carousel-landscape-abstract-three-cols dbcu-carousel<?php echo $scrollable ? '' : ' dbcu-carousel--statico'; ?>"
 				id="<?php echo esc_attr( $uid ); ?>"
-				data-bs-ride="<?php echo esc_attr( ( 'true' === $autoplay ) ? 'carousel' : 'false' ); ?>"
-				data-dbcu-per-view="<?php echo esc_attr( $per_view ); ?>">
-				<div class="splide" role="group" aria-label="<?php esc_attr_e( 'Carosello collegamenti utili', 'db-collegamenti-utili' ); ?>">
+				data-dbcu-options="<?php echo esc_attr( wp_json_encode( $options ) ); ?>">
+				<?php
+				/*
+				 * Volutamente `dbcu-splide` e non `splide`: bootstrap-italia.js cicla su
+				 * getElementsByClassName('splide') e monterebbe una seconda istanza sopra
+				 * la nostra. Splide non richiede quella classe sulla root — i fogli di
+				 * stile agganciano `splide__track` / `splide__list` / `splide__slide` e i
+				 * modificatori che Splide aggiunge da sé (`splide--ltr` e simili).
+				 */
+				?>
+				<div class="dbcu-splide" role="group" aria-label="<?php esc_attr_e( 'Carosello collegamenti utili', 'db-collegamenti-utili' ); ?>">
 					<div class="splide__track">
 						<ul class="splide__list">
 							<?php
@@ -121,14 +179,28 @@ class DBCU_Shortcode {
 						</ul>
 					</div>
 
-					<div class="splide__arrows dbcu-arrows">
-						<button class="splide__arrow splide__arrow--prev dbcu-arrow dbcu-arrow--prev" type="button" aria-label="<?php esc_attr_e( 'Vai al collegamento precedente', 'db-collegamenti-utili' ); ?>">
-							<svg class="icon" aria-hidden="true" focusable="false"><use xlink:href="#it-chevron-left" href="#it-chevron-left"></use></svg>
-						</button>
-						<button class="splide__arrow splide__arrow--next dbcu-arrow dbcu-arrow--next" type="button" aria-label="<?php esc_attr_e( 'Vai al collegamento successivo', 'db-collegamenti-utili' ); ?>">
-							<svg class="icon" aria-hidden="true" focusable="false"><use xlink:href="#it-chevron-right" href="#it-chevron-right"></use></svg>
-						</button>
-					</div>
+					<?php if ( $scrollable ) : ?>
+						<div class="splide__arrows dbcu-arrows">
+							<button class="splide__arrow splide__arrow--prev dbcu-arrow dbcu-arrow--prev" type="button" aria-label="<?php esc_attr_e( 'Vai al collegamento precedente', 'db-collegamenti-utili' ); ?>">
+								<svg class="icon" aria-hidden="true" focusable="false"><use xlink:href="#it-chevron-left" href="#it-chevron-left"></use></svg>
+							</button>
+
+							<?php if ( $autoplay ) : ?>
+								<?php // WCAG 2.2.2 (livello A): lo scorrimento automatico deve avere un comando di pausa raggiungibile da tastiera. ?>
+								<button class="dbcu-arrow dbcu-autoplay-toggle" type="button"
+									data-label-pausa="<?php esc_attr_e( 'Metti in pausa lo scorrimento automatico', 'db-collegamenti-utili' ); ?>"
+									data-label-riprendi="<?php esc_attr_e( 'Riprendi lo scorrimento automatico', 'db-collegamenti-utili' ); ?>"
+									aria-label="<?php esc_attr_e( 'Metti in pausa lo scorrimento automatico', 'db-collegamenti-utili' ); ?>">
+									<svg class="icon dbcu-icon-pausa" aria-hidden="true" focusable="false"><use xlink:href="#it-pause" href="#it-pause"></use></svg>
+									<svg class="icon dbcu-icon-play" aria-hidden="true" focusable="false"><use xlink:href="#it-play" href="#it-play"></use></svg>
+								</button>
+							<?php endif; ?>
+
+							<button class="splide__arrow splide__arrow--next dbcu-arrow dbcu-arrow--next" type="button" aria-label="<?php esc_attr_e( 'Vai al collegamento successivo', 'db-collegamenti-utili' ); ?>">
+								<svg class="icon" aria-hidden="true" focusable="false"><use xlink:href="#it-chevron-right" href="#it-chevron-right"></use></svg>
+							</button>
+						</div>
+					<?php endif; ?>
 				</div>
 			</div>
 		</section>
