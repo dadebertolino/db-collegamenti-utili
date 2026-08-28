@@ -32,13 +32,17 @@ Attributi opzionali:
 |-----------|---------|-------------|
 | `titolo` | `Collegamenti utili` | Titolo sopra il carosello (vuoto per nasconderlo). |
 | `per_view` | `3` | Loghi visibili contemporaneamente su desktop (1–4). Scende a 2 sotto i 992px e a 1 sotto i 768px. |
-| `autoplay` | `false` | Scorrimento automatico. Off di default per rispetto WCAG. |
+| `autoplay` | `true` | Scorrimento automatico. **Attivo di default**: per spegnerlo serve dirlo esplicitamente. |
 | `intervallo` | `5` | Secondi fra uno scorrimento e l'altro quando `autoplay` è attivo (minimo 3). |
 
-Esempio:
+Per disattivare lo scorrimento automatico vanno bene `autoplay="false"`, `"no"`, `"off"`, `"0"`, `"spento"` o `"falso"`: qualsiasi altro valore lo lascia acceso.
+
+Esempi:
 
 ```
-[db_collegamenti_utili titolo="COLLEGAMENTI UTILI" per_view="3" autoplay="true" intervallo="6"]
+[db_collegamenti_utili titolo="COLLEGAMENTI UTILI"]
+[db_collegamenti_utili titolo="COLLEGAMENTI UTILI" per_view="2" intervallo="8"]
+[db_collegamenti_utili titolo="COLLEGAMENTI UTILI" autoplay="no"]
 ```
 
 Nel carosello compaiono **solo** le voci con il flag "Mostra nel carosello" attivo, ordinate per il campo *ordine*.
@@ -53,9 +57,11 @@ Se vuoi lo scorrimento anche su desktop con poche voci, abbassa `per_view`.
 
 ### Scorrimento automatico e accessibilità
 
-Con `autoplay="true"` compare accanto alle frecce un pulsante **pausa/riprendi**, raggiungibile da tastiera. Non è un vezzo: il criterio **WCAG 2.2.2 "Pause, Stop, Hide" è di livello A**, il minimo richiesto ai siti della PA, e impone un comando esplicito per fermare qualsiasi contenuto che si muove da solo per più di cinque secondi. La pausa al passaggio del mouse da sola non basta.
+Quando l'autoplay è attivo compare accanto alle frecce un pulsante **pausa/riprendi**, raggiungibile da tastiera. Non è un vezzo: il criterio **WCAG 2.2.2 "Pause, Stop, Hide" è di livello A**, il minimo richiesto ai siti della PA, e impone un comando esplicito per fermare qualsiasi contenuto che si muove da solo per più di cinque secondi. La pausa al passaggio del mouse da sola non basta.
 
-Lo scorrimento si ferma inoltre da sé al passaggio del mouse e all'arrivo del focus da tastiera, e non parte affatto per chi ha attivato la riduzione delle animazioni nel sistema operativo (`prefers-reduced-motion`).
+È quel pulsante a rendere difendibile l'autoplay acceso di default: il criterio chiede che lo scorrimento *si possa fermare*, non che non ci sia. Se la pausa venisse rimossa, il default andrebbe riportato a spento.
+
+Lo scorrimento si ferma inoltre da sé al passaggio del mouse e all'arrivo del focus da tastiera, non parte affatto per chi ha attivato la riduzione delle animazioni nel sistema operativo (`prefers-reduced-motion`), e resta fermo quando alla larghezza corrente c'è una sola pagina — così non gira un ciclo di animazione che non muove nulla.
 
 ## Conformità (siti scolastici / PA)
 
@@ -74,6 +80,13 @@ Lo scorrimento si ferma inoltre da sé al passaggio del mouse e all'arrivo del f
 Gli aggiornamenti arrivano automaticamente dalle Release GitHub (`dadebertolino/db-collegamenti-utili`).
 
 ## Changelog
+
+### 1.2.0
+
+- **Lo scorrimento automatico è ora attivo di default**: si spegne solo dichiarandolo, con `autoplay="false"` (oppure `no`, `off`, `0`, `spento`, `falso`). Prima andava acceso a mano ogni volta. Il default era conservativo per l'accessibilità, ma dalla 1.1.0 il carosello ha il pulsante di pausa richiesto dal criterio WCAG 2.2.2, che chiede di poter fermare lo scorrimento, non di non averlo.
+- L'interpretazione dell'attributo non usa `wp_validate_boolean()`, che considera vero qualsiasi valore diverso da `false` e avrebbe quindi *acceso* lo scorrimento su `autoplay="no"` — un tranello per chi scrive lo shortcode a mano.
+- Lo scorrimento automatico resta fermo quando alla larghezza corrente esiste una sola pagina, invece di tenere vivo un ciclo su `requestAnimationFrame` che non muove niente. Riparte da solo se la finestra si stringe abbastanza da rendere il carosello scorrevole.
+- Una pausa scelta dall'utente non viene più annullata quando il carosello passa allo stato senza scorrimento e vi ritorna.
 
 ### 1.1.1
 

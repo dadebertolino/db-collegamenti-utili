@@ -37,6 +37,28 @@ class DBCU_Shortcode {
 	}
 
 	/**
+	 * Interpreta un attributo booleano dello shortcode.
+	 *
+	 * Serve a distinguere una disattivazione esplicita da tutto il resto, ora che
+	 * l'autoplay è attivo di default. Non si usa wp_validate_boolean() perché
+	 * considera vero qualsiasi stringa diversa da 'false', quindi `autoplay="no"`
+	 * accenderebbe lo scorrimento invece di spegnerlo: chi scrive lo shortcode a
+	 * mano nell'editor non ha motivo di sapere quali parole contano.
+	 *
+	 * @param mixed $valore Valore grezzo dell'attributo.
+	 * @return bool
+	 */
+	protected static function attributo_attivo( $valore ) {
+		if ( is_bool( $valore ) ) {
+			return $valore;
+		}
+		$valore = strtolower( trim( (string) $valore ) );
+		$spento = array( 'false', '0', 'no', 'off', 'falso', 'spento', 'disattivo', '' );
+
+		return ! in_array( $valore, $spento, true );
+	}
+
+	/**
 	 * Render dello shortcode.
 	 *
 	 * @param array $atts Attributi.
@@ -46,9 +68,9 @@ class DBCU_Shortcode {
 		$atts = shortcode_atts(
 			array(
 				'titolo'     => __( 'Collegamenti utili', 'db-collegamenti-utili' ),
-				'per_view'   => 3,       // Loghi visibili per slide su desktop.
-				'autoplay'   => 'false', // Off di default: WCAG scoraggia l'auto-scroll non controllato.
-				'intervallo' => 5,       // Secondi fra uno scorrimento e l'altro, se autoplay è attivo.
+				'per_view'   => 3,      // Loghi visibili per slide su desktop.
+				'autoplay'   => 'true', // Attivo salvo disattivazione esplicita: il criterio WCAG 2.2.2 chiede un comando di pausa, non l'assenza di scorrimento, e il pulsante c'è.
+				'intervallo' => 5,      // Secondi fra uno scorrimento e l'altro, se autoplay è attivo.
 			),
 			$atts,
 			'db_collegamenti_utili'
@@ -115,8 +137,8 @@ class DBCU_Shortcode {
 		 * sempre attivi e se ne occupa Splide, che conosce il breakpoint corrente;
 		 * frontend.js nasconde i comandi solo quando servono davvero a nulla.
 		 */
-		$autoplay = $total > 1
-			&& ( 'true' === $atts['autoplay'] || '1' === (string) $atts['autoplay'] );
+		// Con una voce sola non c'è nulla da far scorrere, qualunque cosa dica l'attributo.
+		$autoplay = $total > 1 && self::attributo_attivo( $atts['autoplay'] );
 
 		$interval = max( 3, (int) $atts['intervallo'] );
 
